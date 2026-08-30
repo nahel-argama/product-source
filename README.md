@@ -56,19 +56,19 @@ Check the available CLI commands:
 python cli.py help
 ```
 
-1. Run migrations (Only if there are migrations to run):
+Run migrations (Only if there are migrations to run):
 
 ```bash
 python cli.py migrate
 ```
 
-1. Download monthly file:
+Download monthly file:
 
 ```bash
 python cli.py download-resource
 ```
 
-1. Ingest products and prices:
+Ingest products and prices:
 
 ```bash
 python cli.py ingest-products
