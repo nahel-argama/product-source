@@ -41,6 +41,14 @@ Copy the `.env.example` file to `.env` and change what you need
 cp .env.example .env
 ```
 
+## Pre-ingested Database
+
+To skip the ingestion process, you can download a fully pre-ingested database directly from the repository's releases. 
+
+1. Go to the [latest database release](https://github.com/nahel-argama/product-source/releases/tag/database).
+2. Download the `database.db` file.
+3. Place the downloaded file into the `database/` directory (replace the existing `database.db` if it's already there).
+
 ## Updating database data
 
 You only must run this if you want to update the database data with a new month entry. The database is versionized, so you can skip this
