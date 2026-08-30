@@ -1,52 +1,9 @@
 import logging
 
-import pandas as pd
-
 import app.database as db
 import app.data as data
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _ingest_products(products: pd.DataFrame) -> dict:
-    _LOGGER.debug(
-        "Preparing product ingestion with %d candidate products.", len(products)
-    )
-    conn = db.get_db()
-
-    conn.begin()
-
-    initial_products_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-
-    conn.register("incoming_products", products)
-
-    conn.execute(
-        """
-        INSERT INTO products (name)
-        SELECT source_rows.name
-        FROM incoming_products source_rows
-        LEFT JOIN products target_rows
-          ON target_rows.name = source_rows.name
-        WHERE target_rows.name IS NULL
-        """
-    )
-
-    final_products_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-    inserted = max(0, final_products_count - initial_products_count)
-
-    _LOGGER.debug("Inserted products total_inserted=%d", inserted)
-
-    conn.commit()
-
-    if inserted > 0:
-        db.refresh_products_fts_index(conn)
-
-    conn.close()
-
-    return {
-        "inserted": inserted,
-    }
-
 
 async def ingest_products() -> dict:
     try:
@@ -54,12 +11,38 @@ async def ingest_products() -> dict:
         monthly_filepath = await data.ensure_monthly_csv()
 
         _LOGGER.debug("Using monthly resource file for products: %s", monthly_filepath)
-        products = await data.get_monthly_products(monthly_filepath)
-        result = _ingest_products(products)
 
-        _LOGGER.info("Product ingestion completed. inserted=%d", result["inserted"])
+        conn = db.get_db()
+        conn.begin()
 
-        return result
+        initial_products_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+
+        conn.execute(f"""
+            INSERT INTO products (name)
+            SELECT DISTINCT lower(trim(dsc_produto))
+            FROM read_csv('{monthly_filepath}', delim=';', header=True, encoding='ISO_8859_1')
+            WHERE lower(trim(dsc_produto)) NOT IN ('outros generos', 'itens diversos')
+              AND lower(trim(dsc_produto)) NOT IN (SELECT name FROM products)
+              AND dsc_produto IS NOT NULL
+        """)
+
+        final_products_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        inserted = max(0, final_products_count - initial_products_count)
+
+        _LOGGER.debug("Inserted products total_inserted=%d", inserted)
+
+        conn.commit()
+
+        if inserted > 0:
+            db.refresh_products_fts_index(conn)
+
+        conn.close()
+
+        _LOGGER.info("Product ingestion completed. inserted=%d", inserted)
+
+        return {
+            "inserted": inserted,
+        }
     except Exception as e:
         _LOGGER.exception("Product ingestion failed.")
         raise Exception(f"Error ingesting products: {e}")
@@ -73,59 +56,38 @@ async def ingest_prices() -> dict:
 
         monthly_filepath = await data.ensure_monthly_csv()
         _LOGGER.debug("Using monthly resource file for prices: %s", monthly_filepath)
-        prices = await data.get_monthly_prices(monthly_filepath)
-        total = len(prices)
+
+        total = conn.execute(f"SELECT COUNT(*) FROM read_csv('{monthly_filepath}', delim=';', header=True, encoding='ISO_8859_1')").fetchone()[0]
+
         _LOGGER.debug("Loaded %d price rows from source.", total)
 
-        initial_prices_count = conn.execute(
-            "SELECT COUNT(*) FROM product_prices"
-        ).fetchone()[0]
+        initial_prices_count = conn.execute("SELECT COUNT(*) FROM product_prices").fetchone()[0]
 
-        conn.register("incoming_prices", prices)
-
-        conn.execute(
-            """
-            WITH prepared AS (
-                SELECT
-                    p.id AS product_id,
-                    s.price,
-                    s.date,
-                    s.municipality,
-                    s.state,
-                    s.region,
-                    s.metric_unit,
-                    s.source
-                FROM incoming_prices s
-                INNER JOIN products p ON p.name = s.product_name
-            )
+        conn.execute(f"""
             INSERT INTO product_prices
             (product_id, price, date, municipality, state, region, metric_unit, source)
             SELECT
-                source_rows.product_id,
-                source_rows.price,
-                source_rows.date,
-                source_rows.municipality,
-                source_rows.state,
-                source_rows.region,
-                source_rows.metric_unit,
-                source_rows.source
-            FROM prepared source_rows
-            LEFT JOIN product_prices target_rows
-              ON target_rows.product_id = source_rows.product_id
-             AND target_rows.date = source_rows.date
-             AND COALESCE(target_rows.municipality, '') = COALESCE(source_rows.municipality, '')
-             AND COALESCE(target_rows.state, '') = COALESCE(source_rows.state, '')
-             AND COALESCE(target_rows.source, '') = COALESCE(source_rows.source, '')
-            WHERE target_rows.id IS NULL
-            """
-        )
+                p.id AS product_id,
+                CAST(REPLACE(REPLACE(CAST(s.valor_comercializado AS VARCHAR), '.', ''), ',', '.') AS DECIMAL) / 
+                CAST(REPLACE(REPLACE(CAST(s.qtd_comercializada_kg AS VARCHAR), '.', ''), ',', '.') AS DECIMAL) AS price,
+                make_date(CAST(s.id_ano_comercializacao AS INTEGER), CAST(s.id_mes_comercializacao AS INTEGER), 1) AS date,
+                lower(trim(s.municipio_ceasa)) AS municipality,
+                lower(trim(s.uf_ceasa)) AS state,
+                lower(trim(s.dsc_ceasa)) AS region,
+                'kg' AS metric_unit,
+                'monthly' AS source
+            FROM read_csv('{monthly_filepath}', delim=';', header=True, encoding='ISO_8859_1') s
+            INNER JOIN products p ON p.name = lower(trim(s.dsc_produto))
+            WHERE s.dsc_produto IS NOT NULL
+              AND s.valor_comercializado IS NOT NULL
+              AND s.qtd_comercializada_kg IS NOT NULL
+              AND CAST(REPLACE(REPLACE(CAST(s.qtd_comercializada_kg AS VARCHAR), '.', ''), ',', '.') AS DECIMAL) > 0
+            ON CONFLICT DO NOTHING;
+        """)
 
-        final_prices_count = conn.execute(
-            "SELECT COUNT(*) FROM product_prices"
-        ).fetchone()[0]
+        final_prices_count = conn.execute("SELECT COUNT(*) FROM product_prices").fetchone()[0]
 
         inserted = max(0, final_prices_count - initial_prices_count)
-
         skipped = total - inserted
 
         conn.commit()
