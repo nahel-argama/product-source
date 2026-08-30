@@ -9,7 +9,6 @@ app/api/routes.py
 app/cli/__init__.py
 app/cli/command.py
 app/data/__init__.py
-app/data/dataset.py
 app/data/fetch.py
 app/data/ingestion.py
 app/data/resource.py
@@ -21,6 +20,7 @@ app/database/migrations/20260412002857_create_sequence_serial.py
 app/database/migrations/20260412003006_create_table_products.py
 app/database/migrations/20260412003027_create_table_product_prices.py
 app/database/migrations/20260525214629_alter_table_products_add_context_columns.py
+app/database/migrations/20260830153400_add_unique_constraint_prices.py
 price_scrapper.egg-info/PKG-INFO
 price_scrapper.egg-info/SOURCES.txt
 price_scrapper.egg-info/dependency_links.txt

@@ -16,7 +16,7 @@ Simple service to download public produce price data from CONAB Prohort, ingest 
 
 ## What this project does
 
-- Downloads the monthly source CSV file.
+- Handles monthly PROHORT data download form CONAB.
 - Ingests products and prices into a local DuckDB database.
 - Exposes endpoints to search products and calculate average prices by period/state.
 
@@ -52,11 +52,6 @@ Copy the `.env.example` file to `.env` and change what you need
 ```bash
 cp .env.example .env
 ```
-
-Notes:
-
-- `PROHORT_MONTHLY_URL` is required to download source data.
-- Other variables are optional and have defaults in the code.
 
 ## Updating database data
 

@@ -19,10 +19,10 @@ async def ingest_products() -> dict:
 
         conn.execute(f"""
             INSERT INTO products (name)
-            SELECT DISTINCT lower(trim(dsc_produto))
+            SELECT DISTINCT lower(trim(strip_accents(dsc_produto)))
             FROM read_csv('{monthly_filepath}', delim=';', header=True, encoding='ISO_8859_1')
-            WHERE lower(trim(dsc_produto)) NOT IN ('outros generos', 'itens diversos')
-              AND lower(trim(dsc_produto)) NOT IN (SELECT name FROM products)
+            WHERE lower(trim(strip_accents(dsc_produto))) NOT IN ('outros generos', 'itens diversos')
+              AND lower(trim(strip_accents(dsc_produto))) NOT IN (SELECT name FROM products)
               AND dsc_produto IS NOT NULL
         """)
 
@@ -77,7 +77,7 @@ async def ingest_prices() -> dict:
                 'kg' AS metric_unit,
                 'monthly' AS source
             FROM read_csv('{monthly_filepath}', delim=';', header=True, encoding='ISO_8859_1') s
-            INNER JOIN products p ON p.name = lower(trim(s.dsc_produto))
+            INNER JOIN products p ON p.name = lower(trim(strip_accents(s.dsc_produto)))
             WHERE s.dsc_produto IS NOT NULL
               AND s.valor_comercializado IS NOT NULL
               AND s.qtd_comercializada_kg IS NOT NULL
