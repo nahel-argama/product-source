@@ -13,7 +13,7 @@ class SearchResponse(BaseModel):
     model_config = {"extra": "ignore"}
 
     id: str
-    name: str
+    name: str | None
     normal_name: str
     created_at: datetime.datetime
 
@@ -24,7 +24,7 @@ class PriceResponse(BaseModel):
     product_id: str
     from_date: datetime.date
     to_date: datetime.date
-    name: str
+    name: str | None
     normal_name: str
     state: str
     avg_price: float
