@@ -1,0 +1,19 @@
+info:
+  name: Products
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{host}}/api/products/search?query=alfa crspa"
+  params:
+    - name: query
+      value: alfa crspa
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

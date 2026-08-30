@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Scrapper - API Documentation</title>
+    <style>
+        body { margin: 0; padding: 0; }
+        #opencollection-container { width: 100vw; height: 100vh; }
+    </style>
+    <link rel="stylesheet" href="https://cdn.opencollection.com/docs.css">
+    <script src="https://cdn.opencollection.com/docs.js"></script>
+</head>
+<body>
+    <div id="opencollection-container"></div>
+    <script>
+        const collectionData = "opencollection: 1.0.0\ninfo:\n  name: Price Scrapper\nconfig:\n  proxy:\n    inherit: true\n    config:\n      protocol: http\n      hostname: ''\n      port: ''\n      auth:\n        username: ''\n        password: ''\n      bypassProxy: ''\nitems:\n  - info:\n      name: Prices\n      type: http\n      seq: 2\n    http:\n      method: GET\n      url: '{{host}}/api/products/:product_id/prices?from_date=2026-03-01&to_date=2026-04-30&state=sp'\n      params:\n        - name: from_date\n          value: '2026-03-01'\n          type: query\n        - name: to_date\n          value: '2026-04-30'\n          type: query\n        - name: state\n          value: sp\n          type: query\n        - name: product_id\n          value: '273'\n          type: path\n      auth: inherit\n    settings:\n      encodeUrl: true\n      timeout: 0\n      followRedirects: true\n      maxRedirects: 5\n  - info:\n      name: Products\n      type: http\n      seq: 1\n    http:\n      method: GET\n      url: '{{host}}/api/products/search?query=alfa crspa'\n      params:\n        - name: query\n          value: alfa crspa\n          type: query\n      auth: inherit\n    settings:\n      encodeUrl: true\n      timeout: 0\n      followRedirects: true\n      maxRedirects: 5\nrequest:\n  variables:\n    - name: host\n      value: http://localhost:8000\nbundled: true\nextensions:\n  bruno:\n    ignore:\n      - node_modules\n      - .git\n    exportedAt: '2026-04-26T15:45:24.300Z'\n    exportedUsing: Bruno/3.2.0\n";
+        new window.OpenCollection({
+            target: document.getElementById('opencollection-container'),
+            opencollection: collectionData,
+            theme: 'light'
+        });
+    </script>
+</body>
+</html>
