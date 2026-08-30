@@ -14,7 +14,6 @@ def normalize_query(query: str) -> str:
     return normalized.replace(" ", "")
 
 
-
 def get_products_price_avg(products: list[dict]) -> Decimal:
     prices = [p["price"] for p in products]
     decimal_prices = [Decimal(str(p)) for p in prices if p is not None]

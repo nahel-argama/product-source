@@ -47,9 +47,5 @@ def delete_data_dir() -> None:
     delete_csv_files(get_monthly_dir(), prefix=_MONTHLY_PREFIX)
 
 
-def get_today_filename() -> str:
-    return get_month_filename()
-
-
 async def download_daily_csv() -> str:
     return await download_monthly_csv()
