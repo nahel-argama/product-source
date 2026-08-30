@@ -1,4 +1,4 @@
-# Price Scrapper
+# CONAB monthly Prohort data igestion
 
 Simple service to download public produce price data from CONAB Prohort, ingest it into DuckDB, and expose it through a small FastAPI API.
 
